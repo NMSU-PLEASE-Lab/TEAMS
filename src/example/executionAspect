@@ -1,0 +1,5 @@
+aspect MyAspect {
+pointcut Execution(): within(org.h2) && execution(* get()){ requires Execution.methodName; } ;
+
+Advice1 before() : Execution ;
+}

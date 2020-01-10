@@ -1,0 +1,4 @@
+aspect PrintGetters {
+pointcut PCGet (arg1,arg2): execution(getName()) && call(get());
+}
+

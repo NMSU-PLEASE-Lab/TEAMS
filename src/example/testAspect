@@ -1,0 +1,4 @@
+aspect PrintGetters {
+pointcut PCGet(arg4): within(org.h2)	&& call(* get());
+test before() : PCGET ;
+}

@@ -1,0 +1,7 @@
+aspect MyAspect {
+pointcut Execution(): within(example.UserClass) && execution(* get()){ requires Execution.methodName; } ;
+pointcut Call(): within(example.UserClass) && call(* Met()){ requires Call.methodName; } ;
+
+Advice1 before() : Execution ;
+Advice2 before() : Call ;
+}

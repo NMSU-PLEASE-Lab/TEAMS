@@ -1,0 +1,6 @@
+aspect MyAspect {
+pointcut Execution(): within(example.UserClass) && execution(* get()) { requires Static.MethoName ;} ; 
+
+Advice1 before() : Execution ;
+
+}

@@ -1,0 +1,7 @@
+aspect MyAspect {
+pointcut ExecutionBlockId(): within(org.h2) && basicblock(* get()){ requires Basicblock.blockId; } ;
+
+Advice1 before() : ExecutionBlockId ;
+}
+
+

@@ -1,0 +1,5 @@
+aspect MyAspect {
+pointcut Call(): within(org.h2) && call(* get()) { requires Call.MethodName;};
+
+Advice1 before() : Call ;
+}

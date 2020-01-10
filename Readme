@@ -1,0 +1,83 @@
+
+TEAMS configuration and extension
+
+
+Prerequisites: 
+1- Download the last version of TEAMS from 
+   http://www.cs.nmsu.edu/please/projects/aopmon/ .
+2- Download ASM and Antlr packages. 
+   ANTLR (ANother Tool for Language Recognition) is a powerful parser generator
+   for reading, processing, executing, or translating structured text or binary
+   files. Please visit http://www.antlr.org/ for more information. 
+   ASM is an all purpose Java bytecode manipulation and analysis framework.
+   Please visit http://asm.ow2.org/index.html for more information. The current
+   release of TEAMS uses antlr version 4.0 and asm version 5.0.
+3- Install ant. Apache Ant is a Java library and command-line tool whose
+   mission is to drive processes described in build files as targets and
+   extension points dependent upon each other. The main known usage of Ant 
+   is the build of Java applications. Ant supplies a number of built-in tasks
+   allowing to compile, assemble, test and run Java applications. Please visit
+   http://ant.apache.org/ for mor information. 
+
+Configuration:
+1- Extract TEAMS.zip In the path you want to have it. 
+   For example, ../Your-Path/
+2- Please add ASM and Antlr packages to your library if you don not have them
+   already  (here to the ../Your-Path/lib/). You should have 
+   antlr-runtime-4.0.jar and asm-all-5.0_ALPHA.jar to the lib directory for
+   current version of TEAMS.  
+
+Compile:
+1. In the trunk, do "ant clean" and then "ant all"
+2. The bin directory will contain the compiled .class files, but these are 
+   not needed; the main trunk directory will contain "teams.jar", and the 
+   lib directory will contain "example.jar" and "extension.jar"
+
+Run: 
+Open a terminal then run the following commands:
+	>cd Your-Path  change directory to your path
+	>time java -javaagent:TEAMS.jar=path-To-Your-Aspect-File 
+               -cp Path-to-Application-and-Libraries:. 
+               The-main-Class-of-the-Application-and-its-input
+
+   For example for Dacapo I used the following command line (you need to
+   extract Dacapo package, here is in download directory):
+
+	>time java -javaagent:teams.jar=executionAspect -cp ./exapmle.jar:./lib/asm-all-5.0_ALPHA.jar:./lib/antlr-runtime-4.0.jar:./Application/dacapo-9.12-bach:./Application/dacapo-9.12-bach/jar/h2-1.2.121.jar:. Harness h2
+	
+Extension Instruction:
+
+To create a new PCD in Teams-Java, three things need to be done:
+1. add the grammar clause(s) that will match the designator's syntax;
+2. write the code that finds and indicates the matching execution points; and
+3. write the code that provides unique data for the PCD.
+
+1. Our pointcut expression grammar is an Antlr grammar. We currently do not have an automated mechanism to extend the grammar, but adding a new designator is straightforward and mostly mechanistic. A production rule for a generic designator has an OR'd set of clauses, each a production rule for one specific PCD; a clause for the new PCD is needed, which is generally just one nonterminal for the specific PCD (e.g., call for our method call PCD). Then a new production rule for the new PCD is needed. This rule must embody the designator plus any arguments that it might have. For the call example, in full Antlr syntax this looks like
+
+call returns[Designator value]:
+  { $value = new Designator();
+     $value.setName("call"); }
+     'call' '('
+e=methodSignaturePattern {$value.setArgument(e);}
+')'
+;
+Curly braces surround embedded Java actions and are the same for all PCD rules; the syntax of the PCD is simply the literal "call", the literal parentheses, and the single PCD argument which is the nonterminal methodSignaturePattern, which matches a RegEx-style pattern describing methods to match (this is similar to AspectJ and other AOP implementations). We provide some existing nonterminals for standard AOP designator arguments, plus simple strings and numerical arguments. If a PCD needs something different, more Antlr clauses may need to be created for its arguments, but we think this will be rare. The Java actions simply create an object for Teams to use as it processes the expression.
+
+2. The creator of the new PCD must write code that embodies what that PCD is: to match program execution points where instrumentation can be attached. Ultimately we will be exploring multiple different views of a program execution (dimensions), but for now we focus on the most immediate and used view, that of the code being executed. Teams uses the ASM bytecode manipulation framework for inserting the instrumentation into the program, and so the new designator code must use some of the ASM mechanisms to discover and find the execution points that the designator matches. The code to implement a new PCD must implement the interface PCDShadowMatcher. For now, this interface is:
+
+public interface PCDShadowMatcher {
+	public Set<JoinPointShadow> match(MethodNode methodNode, ArgumentList args );
+}
+The new PCD must implement just one method, match. This method takes as its first argument an ASM object that represents a method in a class; thus match() is called once for each method of each class that is loaded. The second argument are the PCD arguments from the pointcut expression. Match() returns a set of bytecode intervals that match the PCD, marked by the positions of the first and last instructions in the interval. Many PCDs, such as the call PCD, might have just one instruction in each interval, but some, such as a hypothetical loop body PCD, could have a longer sequence of instructions that match. Note that a PCD creator in Teams-Java must learn and use the ASM API to implement their PCD's functionality; Teams is intended to hide such complexity from the Teams user, but needs to expose it to the Teams extender. 
+CallShadowMatcher class in the extension package implement the match method which can be use as an example for this step. 
+3. write the code that provides unique data for the PCD.
+
+AspectJ commands:
+This part is used for AspectJ we do not need it here:
+	cd ../src/
+	ajc -inpath dacapo-9.12-bach/jar/h2-1.2.121 -aspectpath dacapo-9.12-bach/aspect -d dacapo-9.12-bach/dist/
+	time java -javaagent:aspectjweaver.jar -cp dacapo-9.12-bach:dacapo-9.12-bach/jar/h2-1.2.121.jar:. Harness h2
+
+
+
+

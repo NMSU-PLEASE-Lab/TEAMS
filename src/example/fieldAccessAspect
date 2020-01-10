@@ -1,0 +1,5 @@
+aspect MyAspect {
+pointcut FieldAccess(): within(org.h2) && fieldAccess(){ requires fieldaccess.fieldId; };
+
+Advice1 before() : FieldAccess ;
+}

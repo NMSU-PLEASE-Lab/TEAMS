@@ -1,0 +1,110 @@
+<project name="TEAMS" default="help" basedir=".">
+  <!-- Define the properties used by the build -->
+  <property name="app.name"      value="TEAMS"/>
+  <property name="app.version"   value="0.1-dev"/>
+  <property name="dist.home"     value="${basedir}/bin"/>
+  <property name="src.home"      value="${basedir}/src"/>
+	
+
+
+  <target name="help">
+    <echo>You can use the following targets:</echo>
+    <echo> </echo>
+    <echo>  help    : (default) Prints this message </echo>
+    <echo>  all     : Cleans, compiles, and packages application</echo>
+    <echo>  clean   : Deletes work directories</echo>
+    <echo>  compile : Compiles project into class files</echo>
+    <echo>  dist    : Packages artifacts into a deployable WAR</echo>
+    <echo>  jar     : Makes jar files(teams.jar and extension.jar)</echo>
+    <echo>  run     : execute the project</echo>
+    <echo></echo>
+    <echo>For example, to clean, compile, and package all at once, run:</echo>
+    <echo>prompt> ant all </echo>
+  </target>
+
+  <!-- Define the CLASSPATH -->
+  <path id="compile.classpath">
+    <fileset dir="${basedir}/bin">
+    </fileset>
+    <fileset dir="${basedir}">
+    </fileset>
+ </path>
+
+  <target name="all" depends="clean,compile,jar,dist"
+          description="Clean work dirs, then compile and create a WAR"/>
+
+  <target name="clean"
+          description="Delete old work and dist directories">
+    <delete dir="${dist.home}"/>
+  </target>
+
+  <target name="prepare" depends="clean"
+          description="Create working dirs and copy static files to work dir">
+    <mkdir  dir="${dist.home}"/>
+  </target>
+
+  <target name="compile" depends="prepare"
+          description="Compile Java sources and copy to WEB-INF/classes dir">
+    <javac srcdir="${src.home}"
+          destdir="${dist.home}">
+        <classpath refid="compile.classpath"/>
+	<!-- <compilerarg value="-Xlint"/>-->
+    </javac>
+   
+  </target>
+	<target name="jar">
+	        <!-- <mkdir dir="${jar.dir}"/> -->
+		<delete file="teams.jar"/>
+	        <jar destfile="${basedir}/teams.jar"
+		     basedir="${dist.home}"
+	 	     includes="teams/**">
+	            <manifest>
+	                <attribute name="Manifest-Version" value="1.0"/>
+  					<attribute name="Premain-Class" value="teams.LoaderAgent"/>
+	            	<attribute name ="Class-Path" value="${basedir}/lib" />
+	            </manifest>
+	        </jar>
+		<delete file="./lib/extension.jar"/>
+	        <jar destfile="${basedir}/lib/extension.jar"
+		     basedir="${dist.home}"
+	 	     includes="extension/**">
+	          <!--  <manifest>
+	                <attribute name="Manifest-Version" value="1.0"/>
+  					<attribute name="Premain-Class" value="teams.LoaderAgent"/>
+	            	<attribute name ="Class-Path" value="${basedir}/lib" />
+	            </manifest> -->
+	        </jar>
+		<!--<jar destfile="${dist.home}/AOP.jar" basedir="${src.home}" /> -->
+		<delete file="./lib/example.jar"/>
+	        <jar destfile="${basedir}/lib/example.jar"
+		     basedir="${dist.home}"
+	 	     includes="example/**">
+	          <!--  <manifest>
+	                <attribute name="Manifest-Version" value="1.0"/>
+  					<attribute name="Premain-Class" value="teams.LoaderAgent"/>
+	            	<attribute name ="Class-Path" value="${basedir}/lib" />
+	            </manifest> -->
+	        </jar>
+	    </target>
+
+  <target name="run" >
+  	<copy file="${basedir}/antlr-3.2.jar" todir="${basedir}/bin/application"/>
+  	<java fork="true" failonerror="yes" classname="aspectAnalyzer.AspectDemo" classpath="${basedir}/bin">  
+	  	<arg line ="src/aspectAnalyzer/PrintGetters.aspect"/>
+  		<arg line ="aspectAnalyzer/extractedAspects"/>
+	  	
+  	</java>
+  	<java fork="true" failonerror="yes" classname="example.UserClass" classpath="${compile.classpath}">  
+  		<jvmarg value="-javaagent:${basedir}/teams.jar" />
+
+  	</java>
+  </target>
+
+
+  <target name="dist" depends="compile"
+          description="Create WAR file for binary distribution">
+    <jar jarfile="${dist.home}/${app.name}-${app.version}.war"
+         basedir="${dist.home}"/>
+  </target>
+
+</project> 
